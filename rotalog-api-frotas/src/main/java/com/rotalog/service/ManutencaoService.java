@@ -1,7 +1,9 @@
 package com.rotalog.service;
 
 import com.rotalog.domain.Manutencao;
+import com.rotalog.domain.StatusVeiculo;
 import com.rotalog.domain.Veiculo;
+import com.rotalog.exception.VeiculoNaoEncontradoException;
 import com.rotalog.repository.ManutencaoRepository;
 import com.rotalog.repository.VeiculoRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +16,7 @@ import java.util.List;
 
 /**
  * ManutencaoService - Serviço de gerenciamento de manutenções
- * 
+ *
  * FIXME: Lógica de negócio misturada com infraestrutura
  * FIXME: Sem transações explícitas
  * FIXME: Sem validação de estados
@@ -32,6 +34,9 @@ public class ManutencaoService {
     @Autowired
     private NotificacaoClient notificacaoClient;
 
+    @Autowired
+    private NotificacaoFallbackAdapter notificacaoFallbackAdapter;
+
     public List<Manutencao> listarTodas() {
         return manutencaoRepository.findAll(); // FIXME: sem paginação
     }
@@ -46,16 +51,25 @@ public class ManutencaoService {
     }
 
     /**
+     * Busca o veículo pelo id ou lança {@link VeiculoNaoEncontradoException}.
+     * Helper consolidado para eliminar a duplicação de checagem "veículo não encontrado"
+     * espalhada pelos métodos desta classe (FR-ARQ-05).
+     */
+    private Veiculo buscarVeiculoOuFalhar(Long id) {
+        return veiculoRepository.findById(id)
+                .orElseThrow(() -> new VeiculoNaoEncontradoException("Veículo não encontrado: " + id));
+    }
+
+    /**
      * Agendar manutenção
-     * 
+     *
      * FIXME: Sem validação se veículo já tem manutenção pendente
      * FIXME: Sem transação explícita
      * FIXME: Atualiza status do veículo diretamente (acoplamento)
      */
     public Manutencao agendarManutencao(Long veiculoId, String tipoManutencao, String descricao, BigDecimal custoEstimado) {
         // Verificar se veículo existe
-        Veiculo veiculo = veiculoRepository.findById(veiculoId)
-                .orElseThrow(() -> new RuntimeException("Veículo não encontrado: " + veiculoId));
+        Veiculo veiculo = buscarVeiculoOuFalhar(veiculoId);
 
         if (tipoManutencao == null || tipoManutencao.trim().isEmpty()) {
             throw new RuntimeException("Tipo de manutenção é obrigatório");
@@ -91,7 +105,7 @@ public class ManutencaoService {
 
     /**
      * Iniciar manutenção
-     * 
+     *
      * FIXME: Sem validação de transição de estado
      * FIXME: Atualiza veículo sem transação
      */
@@ -112,7 +126,7 @@ public class ManutencaoService {
         Veiculo veiculo = veiculoRepository.findById(manutencao.getVeiculoId())
                 .orElse(null);
         if (veiculo != null) {
-            veiculo.setStatus("MANUTENCAO");
+            veiculo.setStatus(StatusVeiculo.MANUTENCAO);
             veiculo.setDataAtualizacao(LocalDateTime.now());
             veiculoRepository.save(veiculo); // FIXME: sem transação com a manutenção
         }
@@ -122,7 +136,7 @@ public class ManutencaoService {
 
     /**
      * Concluir manutenção
-     * 
+     *
      * FIXME: Sem validação de custo final
      * FIXME: Sem transação
      */
@@ -139,7 +153,7 @@ public class ManutencaoService {
         Veiculo veiculo = veiculoRepository.findById(manutencao.getVeiculoId())
                 .orElse(null);
         if (veiculo != null) {
-            veiculo.setStatus("ATIVO");
+            veiculo.setStatus(StatusVeiculo.ATIVO);
             veiculo.setDataAtualizacao(LocalDateTime.now());
             veiculoRepository.save(veiculo); // FIXME: sem transação
         }
@@ -171,8 +185,8 @@ public class ManutencaoService {
 
         // Se veículo estava em manutenção, reativar
         Veiculo veiculo = veiculoRepository.findById(manutencao.getVeiculoId()).orElse(null);
-        if (veiculo != null && "MANUTENCAO".equals(veiculo.getStatus())) {
-            veiculo.setStatus("ATIVO");
+        if (veiculo != null && StatusVeiculo.MANUTENCAO.equals(veiculo.getStatus())) {
+            veiculo.setStatus(StatusVeiculo.ATIVO);
             veiculo.setDataAtualizacao(LocalDateTime.now());
             veiculoRepository.save(veiculo);
         }
@@ -197,5 +211,68 @@ public class ManutencaoService {
             throw new RuntimeException("Nenhuma manutenção encontrada para veículo: " + veiculoId);
         }
         return ultima;
+    }
+
+    /**
+     * Calcula custo de manutenção
+     *
+     * FIXME: Business logic hardcoded
+     * FIXME: No configuration management
+     */
+    public Double calcularCustoManutencao(String modelo, Long quilometragem) {
+        // FIXME: Hardcoded costs
+        Double custoPorKm = 0.05;
+        Double custoBase = 500.0;
+
+        return custoBase + (quilometragem * custoPorKm);
+    }
+
+    /**
+     * Verifica se veículo precisa de manutenção
+     *
+     * FIXME: Hardcoded thresholds
+     */
+    public Boolean precisaDeManutencao(Long veiculoId) {
+        Veiculo veiculo = buscarVeiculoOuFalhar(veiculoId);
+
+        // FIXME: Hardcoded threshold
+        Long limiteQuilometragem = 50000L;
+
+        return veiculo.getQuilometragem() != null && veiculo.getQuilometragem() >= limiteQuilometragem;
+    }
+
+    /**
+     * Agenda manutenção preventiva
+     *
+     * FIXME: Complex business logic mixed with infrastructure concerns
+     * FIXME: Hardcoded maintenance intervals
+     * FIXME: Não persiste nenhum registro de manutenção nem calcula uma data/quilometragem-limite real
+     */
+    public void agendarManutencaoPreventiva(Long veiculoId, Long quilometragemLimite) {
+        Veiculo veiculo = buscarVeiculoOuFalhar(veiculoId);
+
+        log.info("Manutenção preventiva agendada para veículo {} em {} km",
+            veiculo.getPlaca(), quilometragemLimite);
+
+        // Notificar sobre agendamento
+        notificacaoFallbackAdapter.notificarGestor(
+            "MANUTENCAO_AGENDADA",
+            "Manutenção preventiva agendada para veículo " + veiculo.getPlaca() + " em " + quilometragemLimite + " km"
+        );
+    }
+
+    /**
+     * Verifica a necessidade de manutenção preventiva para o veículo e, se aplicável,
+     * dispara um alerta para o gestor. Chamado por {@link VeiculoService#atualizarQuilometragem}
+     * após uma atualização de quilometragem.
+     */
+    public void verificarNecessidadeManutencao(Long veiculoId, Long quilometragemAtual) {
+        if (Boolean.TRUE.equals(precisaDeManutencao(veiculoId))) {
+            Veiculo veiculo = buscarVeiculoOuFalhar(veiculoId);
+            notificacaoFallbackAdapter.notificarGestor(
+                "ALERTA_MANUTENCAO",
+                "Veículo " + veiculo.getPlaca() + " atingiu " + quilometragemAtual + " km. Agendar manutenção preventiva."
+            );
+        }
     }
 }
