@@ -1,51 +1,42 @@
 /**
- * Auth Middleware - Copied from StackOverflow (2020)
- * 
- * FIXME: JWT secret hardcoded
- * FIXME: Sem validação real do token
- * FIXME: Sem refresh token
- * FIXME: Sem role-based access control
- * FIXME: Bypass em desenvolvimento
+ * Auth Middleware
+ *
+ * Valida o token JWT enviado no header `Authorization: Bearer <token>`,
+ * verificando assinatura e expiração via `jsonwebtoken`. O segredo vem
+ * exclusivamente de `process.env.JWT_SECRET` (sem fallback hardcoded) e o
+ * middleware se comporta da mesma forma em todos os ambientes - não há
+ * bypass por NODE_ENV.
+ *
+ * Ver docs/adr/0001-hardening-auth-e-refatoracao-entregas.md e
+ * docs/adr/ADR-001-refatoracao-auth-e-entregas-routes.md (Etapa 1) para o
+ * diagnóstico que motivou esta reescrita.
  */
 
-// FIXME: Hardcoded secret
-const JWT_SECRET = 'super-secret-key-that-should-not-be-hardcoded';
+const jwt = require('jsonwebtoken');
+const logger = require('../config/logger');
 
 function authMiddleware(req, res, next) {
-    // FIXME: Bypass total em desenvolvimento
-    if (process.env.NODE_ENV !== 'production') {
-        console.log('[AUTH] Bypass em desenvolvimento'); // FIXME: usar logger
-        return next();
-    }
-
-    var authHeader = req.headers.authorization;
+    const authHeader = req.headers.authorization;
 
     if (!authHeader) {
         return res.status(401).json({ error: 'Token não fornecido' });
     }
 
-    // FIXME: Apenas verifica se header existe, não valida o token
-    var parts = authHeader.split(' ');
+    const parts = authHeader.split(' ');
     if (parts.length !== 2 || parts[0] !== 'Bearer') {
         return res.status(401).json({ error: 'Token mal formatado' });
     }
 
-    var token = parts[1];
+    const token = parts[1];
 
-    // FIXME: "Validação" fake - apenas verifica se não está vazio
-    if (!token || token.length < 10) {
-        return res.status(401).json({ error: 'Token inválido' });
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded;
+        return next();
+    } catch (error) {
+        logger.warn('Falha na validação do token JWT', { reason: error.message });
+        return res.status(401).json({ error: 'Token inválido ou expirado' });
     }
-
-    // FIXME: Sem decodificação real do JWT
-    // FIXME: Sem verificação de expiração
-    // FIXME: Sem verificação de assinatura
-    console.log('[AUTH] Token aceito (sem validação real)'); // FIXME: usar logger
-
-    // FIXME: User fake
-    req.user = { id: 1, nome: 'Admin', role: 'admin' };
-
-    next();
 }
 
 module.exports = authMiddleware;
