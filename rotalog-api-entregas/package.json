@@ -35,7 +35,8 @@
   "jest": {
     "testEnvironment": "node",
     "collectCoverageFrom": [
-      "src/middleware/auth.js"
+      "src/middleware/auth.js",
+      "src/services/EntregaService.js"
     ],
     "coverageThreshold": {
       "global": {
