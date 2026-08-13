@@ -1,5 +1,6 @@
 package com.rotalog.repository;
 
+import com.rotalog.domain.StatusVeiculo;
 import com.rotalog.domain.Veiculo;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -21,7 +22,9 @@ public interface VeiculoRepository extends JpaRepository<Veiculo, Long> {
 
     Optional<Veiculo> findByPlaca(String placa);
 
-    List<Veiculo> findByStatus(String status);
+    List<Veiculo> findByStatus(StatusVeiculo status);
+
+    long countByStatus(StatusVeiculo status);
 
     // FIXME: Query nativa quando poderia ser derived query
     @Query(value = "SELECT * FROM veiculos WHERE quilometragem > :km", nativeQuery = true)

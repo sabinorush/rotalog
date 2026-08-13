@@ -1,6 +1,7 @@
 package com.rotalog.controller;
 
 import com.rotalog.domain.Veiculo;
+import com.rotalog.dto.FrotaEstatisticasDTO;
 import com.rotalog.dto.VeiculoRequest;
 import com.rotalog.service.VeiculoService;
 import lombok.extern.slf4j.Slf4j;
@@ -186,13 +187,10 @@ public class VeiculoController {
 
     /**
      * Obter estatísticas da frota
-     * 
-     * FIXME: Retorna String JSON em vez de objeto tipado
      */
     @GetMapping("/estatisticas")
-    public ResponseEntity<String> obterEstatisticas() {
-        // FIXME: Chamando método com typo no nome
-        String stats = veiculoService.obterEstatisticasFreita();
+    public ResponseEntity<FrotaEstatisticasDTO> obterEstatisticas() {
+        FrotaEstatisticasDTO stats = veiculoService.obterEstatisticasFrota();
         return ResponseEntity.ok(stats);
     }
 }
