@@ -1,6 +1,8 @@
 package com.rotalog.repository;
 
 import com.rotalog.domain.Motorista;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -10,8 +12,7 @@ import java.util.Optional;
 
 /**
  * MotoristaRepository
- * 
- * FIXME: Sem paginação
+ *
  * FIXME: Sem filtros avançados
  */
 @Repository
@@ -27,6 +28,11 @@ public interface MotoristaRepository extends JpaRepository<Motorista, Long> {
     @Query(value = "SELECT * FROM motoristas WHERE vencimento_cnh < CURRENT_DATE", nativeQuery = true)
     List<Motorista> findMotoristasComCnhVencida();
 
-    // TODO: Adicionar query para motoristas disponíveis
-    // TODO: Adicionar paginação
+    // Motoristas disponíveis = ATIVO com CNH válida. Não existe hoje relacionamento
+    // motorista-veículo no domínio (ver FIXME em Motorista), então "disponível" não
+    // considera alocação a um veículo.
+    @Query(value = "SELECT * FROM motoristas WHERE status = 'ATIVO' AND (vencimento_cnh IS NULL OR vencimento_cnh >= CURRENT_DATE)", nativeQuery = true)
+    List<Motorista> findMotoristasDisponiveis();
+
+    Page<Motorista> findByStatus(String status, Pageable pageable);
 }

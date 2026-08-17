@@ -79,6 +79,16 @@
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <!-- H2: banco em memória usado apenas em testes de repository (@DataJpaTest),
+         em modo de compatibilidade PostgreSQL (MODE=PostgreSQL). Não há Testcontainers
+         nem Docker disponível durante `mvn test`, e o projeto não tinha nenhum
+         @DataJpaTest até agora. -->
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

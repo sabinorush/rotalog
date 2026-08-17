@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -537,6 +538,149 @@ class ManutencaoServiceTest {
             manutencaoService.verificarNecessidadeManutencao(1L, 1000L);
 
             verify(notificacaoFallbackAdapter, never()).notificarGestor(anyString(), anyString());
+        }
+    }
+
+    @Nested
+    @DisplayName("motivoAlerta")
+    class MotivoAlerta {
+
+        @Test
+        @DisplayName("deve retornar KM_EXCEDIDO quando somente a quilometragem exceder o limite")
+        void deveRetornarKmExcedido() {
+            Veiculo veiculo = criarVeiculo(1L, "ABC1234", 60000L, StatusVeiculo.ATIVO);
+            Manutencao ultima = criarManutencao(1L, 1L, "CONCLUIDA");
+            ultima.setDataManutencao(LocalDateTime.now().minusMonths(1));
+            when(veiculoRepository.findById(1L)).thenReturn(Optional.of(veiculo));
+            when(manutencaoRepository.findUltimaManutencao(1L)).thenReturn(ultima);
+
+            String motivo = manutencaoService.motivoAlerta(1L);
+
+            assertThat(motivo).isEqualTo("KM_EXCEDIDO");
+        }
+
+        @Test
+        @DisplayName("deve retornar TEMPO_EXCEDIDO quando somente o tempo desde a última manutenção exceder o limite")
+        void deveRetornarTempoExcedido() {
+            Veiculo veiculo = criarVeiculo(1L, "ABC1234", 1000L, StatusVeiculo.ATIVO);
+            Manutencao ultima = criarManutencao(1L, 1L, "CONCLUIDA");
+            ultima.setDataManutencao(LocalDateTime.now().minusMonths(7));
+            when(veiculoRepository.findById(1L)).thenReturn(Optional.of(veiculo));
+            when(manutencaoRepository.findUltimaManutencao(1L)).thenReturn(ultima);
+
+            String motivo = manutencaoService.motivoAlerta(1L);
+
+            assertThat(motivo).isEqualTo("TEMPO_EXCEDIDO");
+        }
+
+        @Test
+        @DisplayName("deve retornar KM_E_TEMPO_EXCEDIDOS quando ambos os critérios excederem o limite")
+        void deveRetornarKmETempoExcedidos() {
+            Veiculo veiculo = criarVeiculo(1L, "ABC1234", 60000L, StatusVeiculo.ATIVO);
+            Manutencao ultima = criarManutencao(1L, 1L, "CONCLUIDA");
+            ultima.setDataManutencao(LocalDateTime.now().minusMonths(8));
+            when(veiculoRepository.findById(1L)).thenReturn(Optional.of(veiculo));
+            when(manutencaoRepository.findUltimaManutencao(1L)).thenReturn(ultima);
+
+            String motivo = manutencaoService.motivoAlerta(1L);
+
+            assertThat(motivo).isEqualTo("KM_E_TEMPO_EXCEDIDOS");
+        }
+
+        @Test
+        @DisplayName("deve retornar null quando nenhum critério exceder o limite")
+        void deveRetornarNullQuandoNenhumCriterioAtendido() {
+            Veiculo veiculo = criarVeiculo(1L, "ABC1234", 1000L, StatusVeiculo.ATIVO);
+            Manutencao ultima = criarManutencao(1L, 1L, "CONCLUIDA");
+            ultima.setDataManutencao(LocalDateTime.now().minusMonths(1));
+            when(veiculoRepository.findById(1L)).thenReturn(Optional.of(veiculo));
+            when(manutencaoRepository.findUltimaManutencao(1L)).thenReturn(ultima);
+
+            String motivo = manutencaoService.motivoAlerta(1L);
+
+            assertThat(motivo).isNull();
+        }
+
+        @Test
+        @DisplayName("deve usar a data de cadastro do veículo quando não há manutenção registrada")
+        void deveUsarDataCadastroQuandoSemHistoricoDeManutencao() {
+            Veiculo veiculo = criarVeiculo(1L, "ABC1234", 1000L, StatusVeiculo.ATIVO);
+            veiculo.setDataCadastro(LocalDateTime.now().minusMonths(7));
+            when(veiculoRepository.findById(1L)).thenReturn(Optional.of(veiculo));
+            when(manutencaoRepository.findUltimaManutencao(1L)).thenReturn(null);
+
+            String motivo = manutencaoService.motivoAlerta(1L);
+
+            assertThat(motivo).isEqualTo("TEMPO_EXCEDIDO");
+        }
+
+        @Test
+        @DisplayName("deve usar a data de cadastro do veículo quando a manutenção mais recente não tem data")
+        void deveUsarDataCadastroQuandoUltimaManutencaoSemData() {
+            Veiculo veiculo = criarVeiculo(1L, "ABC1234", 1000L, StatusVeiculo.ATIVO);
+            veiculo.setDataCadastro(LocalDateTime.now().minusMonths(7));
+            Manutencao ultima = criarManutencao(1L, 1L, "PENDENTE");
+            ultima.setDataManutencao(null);
+            when(veiculoRepository.findById(1L)).thenReturn(Optional.of(veiculo));
+            when(manutencaoRepository.findUltimaManutencao(1L)).thenReturn(ultima);
+
+            String motivo = manutencaoService.motivoAlerta(1L);
+
+            assertThat(motivo).isEqualTo("TEMPO_EXCEDIDO");
+        }
+
+        @Test
+        @DisplayName("deve retornar null quando não há manutenção nem data de cadastro")
+        void deveRetornarNullQuandoSemDataDeReferencia() {
+            Veiculo veiculo = criarVeiculo(1L, "ABC1234", 1000L, StatusVeiculo.ATIVO);
+            veiculo.setDataCadastro(null);
+            when(veiculoRepository.findById(1L)).thenReturn(Optional.of(veiculo));
+            when(manutencaoRepository.findUltimaManutencao(1L)).thenReturn(null);
+
+            String motivo = manutencaoService.motivoAlerta(1L);
+
+            assertThat(motivo).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("obterVeiculosElegiveisParaAlerta")
+    class ObterVeiculosElegiveisParaAlerta {
+
+        @Test
+        @DisplayName("deve retornar apenas veículos ATIVOS elegíveis, ignorando os demais")
+        void deveRetornarApenasElegiveis() {
+            Veiculo elegivelPorKm = criarVeiculo(1L, "AAA1111", 60000L, StatusVeiculo.ATIVO);
+            Veiculo naoElegivel = criarVeiculo(2L, "BBB2222", 1000L, StatusVeiculo.ATIVO);
+            when(veiculoRepository.findByStatus(StatusVeiculo.ATIVO))
+                    .thenReturn(Arrays.asList(elegivelPorKm, naoElegivel));
+            when(veiculoRepository.findById(1L)).thenReturn(Optional.of(elegivelPorKm));
+            when(veiculoRepository.findById(2L)).thenReturn(Optional.of(naoElegivel));
+
+            Manutencao ultimaRecente = criarManutencao(10L, 1L, "CONCLUIDA");
+            ultimaRecente.setDataManutencao(LocalDateTime.now().minusMonths(1));
+            when(manutencaoRepository.findUltimaManutencao(1L)).thenReturn(ultimaRecente);
+            when(manutencaoRepository.findUltimaManutencao(2L)).thenReturn(ultimaRecente);
+
+            List<Veiculo> resultado = manutencaoService.obterVeiculosElegiveisParaAlerta();
+
+            assertThat(resultado).containsExactly(elegivelPorKm);
+        }
+
+        @Test
+        @DisplayName("deve retornar lista vazia quando nenhum veículo ATIVO for elegível")
+        void deveRetornarListaVaziaQuandoNenhumElegivel() {
+            Veiculo naoElegivel = criarVeiculo(1L, "AAA1111", 1000L, StatusVeiculo.ATIVO);
+            when(veiculoRepository.findByStatus(StatusVeiculo.ATIVO)).thenReturn(Collections.singletonList(naoElegivel));
+            when(veiculoRepository.findById(1L)).thenReturn(Optional.of(naoElegivel));
+
+            Manutencao ultimaRecente = criarManutencao(10L, 1L, "CONCLUIDA");
+            ultimaRecente.setDataManutencao(LocalDateTime.now().minusMonths(1));
+            when(manutencaoRepository.findUltimaManutencao(1L)).thenReturn(ultimaRecente);
+
+            List<Veiculo> resultado = manutencaoService.obterVeiculosElegiveisParaAlerta();
+
+            assertThat(resultado).isEmpty();
         }
     }
 }

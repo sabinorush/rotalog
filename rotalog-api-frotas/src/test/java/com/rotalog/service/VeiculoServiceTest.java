@@ -55,6 +55,9 @@ class VeiculoServiceTest {
     @Mock
     private ManutencaoService manutencaoService;
 
+    @Mock
+    private SistemaExternoClient sistemaExternoClient;
+
     @InjectMocks
     private VeiculoService veiculoService;
 
@@ -509,9 +512,71 @@ class VeiculoServiceTest {
     class SincronizarComSistemaExterno {
 
         @Test
-        @DisplayName("deve executar sem lançar exceção")
-        void deveExecutarSemLancarExcecao() {
+        @DisplayName("deve executar sem lançar exceção quando o client sincronizar com sucesso")
+        void deveExecutarSemLancarExcecaoQuandoClientTemSucesso() {
+            when(sistemaExternoClient.sincronizar()).thenReturn(true);
+
             veiculoService.sincronizarComSistemaExterno();
+
+            verify(sistemaExternoClient, times(1)).sincronizar();
+        }
+
+        @Test
+        @DisplayName("deve executar sem lançar exceção quando o client falhar")
+        void deveExecutarSemLancarExcecaoQuandoClientFalha() {
+            when(sistemaExternoClient.sincronizar()).thenReturn(false);
+
+            veiculoService.sincronizarComSistemaExterno();
+
+            verify(sistemaExternoClient, times(1)).sincronizar();
+        }
+
+        @Test
+        @DisplayName("deve executar sem lançar exceção mesmo quando o client lançar uma exceção inesperada")
+        void deveExecutarSemLancarExcecaoQuandoClientLancaExcecaoInesperada() {
+            when(sistemaExternoClient.sincronizar()).thenThrow(new RuntimeException("erro inesperado"));
+
+            veiculoService.sincronizarComSistemaExterno();
+
+            verify(sistemaExternoClient, times(1)).sincronizar();
+        }
+    }
+
+    @Nested
+    @DisplayName("buscarPorId (cache)")
+    class BuscarPorIdCache {
+
+        @Test
+        @DisplayName("deve consultar o repositório apenas uma vez quando o mesmo id for buscado duas vezes")
+        void deveUsarCacheNaSegundaBusca() {
+            Veiculo veiculo = criarVeiculo(1L, "ABC1234", "Fiat Uno", 2020, 1000L, StatusVeiculo.ATIVO);
+            when(veiculoRepository.findById(1L)).thenReturn(Optional.of(veiculo));
+
+            Veiculo primeiraBusca = veiculoService.buscarPorId(1L);
+            Veiculo segundaBusca = veiculoService.buscarPorId(1L);
+
+            assertThat(primeiraBusca).isEqualTo(veiculo);
+            assertThat(segundaBusca).isEqualTo(veiculo);
+            verify(veiculoRepository, times(1)).findById(1L);
+        }
+    }
+
+    @Nested
+    @DisplayName("obterMetricas")
+    class ObterMetricas {
+
+        @Test
+        @DisplayName("deve contabilizar cache miss e cache hit em buscarPorId")
+        void deveContabilizarCacheMissECacheHit() {
+            Veiculo veiculo = criarVeiculo(1L, "ABC1234", "Fiat Uno", 2020, 1000L, StatusVeiculo.ATIVO);
+            when(veiculoRepository.findById(1L)).thenReturn(Optional.of(veiculo));
+
+            veiculoService.buscarPorId(1L);
+            veiculoService.buscarPorId(1L);
+
+            assertThat(veiculoService.obterMetricas())
+                    .containsEntry("veiculo.buscarPorId.cacheMiss", 1L)
+                    .containsEntry("veiculo.buscarPorId.cacheHit", 1L);
         }
     }
 }
