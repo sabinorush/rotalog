@@ -24,7 +24,8 @@ pelos repositórios. Ao trabalhar aqui:
 
 ### rotalog-api-frotas (Java 11 + Spring Boot 2.7)
 
-- Responsabilidade: veículos, motoristas, manutenções
+- Responsabilidade: veículos, motoristas, manutenções, alertas de manutenção
+  preventiva
 - Banco de dados: PostgreSQL (schema `frotas`), porta 8080
 - Migrações: Flyway em `src/main/resources/db/migration`
 - Estrutura: controller -> service -> repository
@@ -53,7 +54,7 @@ pelos repositórios. Ao trabalhar aqui:
 
 - Responsabilidade: aplicações web para usuários finais e gestores
 - `apps/painel-admin` (Angular 18, porta 4200): painel de gestão — dashboard,
-  veículos, motoristas, manutenções, entregas
+  veículos, motoristas, manutenções, alertas de manutenção, entregas
 - `apps/rastreamento` (React 18, porta 3001): portal público de rastreamento
 - Libs compartilhadas: `libs/shared-types`, `libs/ui-components`,
   `libs/api-contracts`

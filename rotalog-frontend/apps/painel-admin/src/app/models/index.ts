@@ -58,6 +58,16 @@ export interface Entrega {
   created_at: string;
 }
 
+export interface AlertaManutencao {
+  id: number;
+  veiculoId: number;
+  motivo: string;
+  status: string;
+  mensagemErro: string | null;
+  dataCriacao: string;
+  dataAtualizacao: string;
+}
+
 // TODO: Tipo genérico para resposta da API - nunca implementado
 export interface ApiResponse<T> {
   data: T;
