@@ -1,0 +1,187 @@
+### RotaLog - API Frotas - HTTP Requests para testes
+### Usar com REST Client (VS Code) ou similar
+
+### ===========================================
+### HEALTH CHECK
+### ===========================================
+
+### Health Check (inclui status de api-entregas e api-notificacoes)
+GET http://localhost:8080/api/health
+
+### ===========================================
+### VEÍCULOS
+### ===========================================
+
+### Listar todos os veículos
+GET http://localhost:8080/api/veiculos
+
+### Buscar veículo por ID
+GET http://localhost:8080/api/veiculos/1
+
+### Buscar veículo por placa
+GET http://localhost:8080/api/veiculos/placa/ABC1D23
+
+### Listar veículos por status (ATIVO, INATIVO, MANUTENCAO)
+GET http://localhost:8080/api/veiculos/status/ATIVO
+
+### Obter estatísticas da frota
+GET http://localhost:8080/api/veiculos/estatisticas
+
+### Registrar novo veículo
+POST http://localhost:8080/api/veiculos
+Content-Type: application/json
+
+{
+    "placa": "NEW1X99",
+    "modelo": "Volkswagen Delivery 11.180",
+    "anoFabricacao": 2024
+}
+
+### Atualizar veículo
+PUT http://localhost:8080/api/veiculos/1
+Content-Type: application/json
+
+{
+    "modelo": "Volkswagen Delivery 11.180",
+    "anoFabricacao": 2024,
+    "quilometragem": 45500
+}
+
+### Atualizar quilometragem
+PATCH http://localhost:8080/api/veiculos/1/quilometragem
+Content-Type: application/json
+
+{
+    "quilometragem": 46000
+}
+
+### Desativar veículo
+PATCH http://localhost:8080/api/veiculos/1/desativar
+
+### Reativar veículo
+PATCH http://localhost:8080/api/veiculos/1/reativar
+
+### ===========================================
+### MOTORISTAS
+### ===========================================
+
+### Listar todos os motoristas
+GET http://localhost:8080/api/motoristas
+
+### Buscar motorista por ID
+GET http://localhost:8080/api/motoristas/1
+
+### Buscar motorista por CNH
+GET http://localhost:8080/api/motoristas/cnh/12345678901
+
+### Listar motoristas por status
+GET http://localhost:8080/api/motoristas/status/ATIVO
+
+### Listar motoristas com CNH vencida
+GET http://localhost:8080/api/motoristas/cnh-vencida
+
+### Cadastrar novo motorista
+POST http://localhost:8080/api/motoristas
+Content-Type: application/json
+
+{
+    "nome": "Pedro Santos",
+    "cnh": "12345678901",
+    "categoriaCnh": "D",
+    "vencimentoCnh": "2027-01-15"
+}
+
+### Atualizar motorista
+PUT http://localhost:8080/api/motoristas/1
+Content-Type: application/json
+
+{
+    "nome": "Pedro Santos",
+    "categoriaCnh": "D",
+    "vencimentoCnh": "2028-06-30"
+}
+
+### Desativar motorista
+PATCH http://localhost:8080/api/motoristas/1/desativar
+
+### Reativar motorista
+PATCH http://localhost:8080/api/motoristas/1/reativar
+
+### ===========================================
+### MANUTENÇÕES
+### ===========================================
+
+### Listar todas as manutenções
+GET http://localhost:8080/api/manutencoes
+
+### Buscar manutenção por ID
+GET http://localhost:8080/api/manutencoes/1
+
+### Listar manutenções por veículo
+GET http://localhost:8080/api/manutencoes/veiculo/1
+
+### Listar manutenções pendentes
+GET http://localhost:8080/api/manutencoes/pendentes
+
+### Obter última manutenção de um veículo
+GET http://localhost:8080/api/manutencoes/veiculo/1/ultima
+
+### Agendar nova manutenção
+POST http://localhost:8080/api/manutencoes
+Content-Type: application/json
+
+{
+    "veiculoId": 1,
+    "tipoManutencao": "PREVENTIVA",
+    "descricao": "Troca de óleo e filtros - 40.000km",
+    "custoEstimado": 950.00
+}
+
+### Iniciar manutenção
+PATCH http://localhost:8080/api/manutencoes/1/iniciar
+
+### Concluir manutenção
+PATCH http://localhost:8080/api/manutencoes/1/concluir
+Content-Type: application/json
+
+{
+    "custoFinal": 980.50
+}
+
+### Cancelar manutenção
+PATCH http://localhost:8080/api/manutencoes/1/cancelar
+
+### ===========================================
+### ALERTAS DE MANUTENÇÃO PREVENTIVA
+### ===========================================
+
+### Verificar veículos elegíveis e emitir alertas (envia para api-notificacoes)
+POST http://localhost:8080/api/alertas-manutencao/verificar
+
+### Listar todos os alertas de manutenção
+GET http://localhost:8080/api/alertas-manutencao
+
+### Listar alertas por status (PENDENTE, ENVIADA, FALHA)
+GET http://localhost:8080/api/alertas-manutencao?status=ENVIADA
+
+### ===========================================
+### FLUXO COMPLETO: Alerta de manutenção preventiva
+### ===========================================
+
+### 1. Conferir veículos elegíveis antes de verificar (KM > 50000 ou > 6 meses sem manutenção)
+GET http://localhost:8080/api/veiculos/status/ATIVO
+
+### 2. Disparar verificação e envio dos alertas (rotalog-api-notificacoes precisa estar de pé na porta 5000)
+POST http://localhost:8080/api/alertas-manutencao/verificar
+
+### 3. Conferir o resultado persistido
+GET http://localhost:8080/api/alertas-manutencao
+
+### 4. Conferir só os que falharam ou ficaram pendentes (ex.: api-notificacoes fora do ar)
+GET http://localhost:8080/api/alertas-manutencao?status=PENDENTE
+
+### ===========================================
+### SWAGGER / OPENAPI
+### ===========================================
+
+### Não há Swagger configurado em rotalog-api-frotas (diferente de rotalog-api-notificacoes)

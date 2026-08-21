@@ -40,6 +40,8 @@ src/main/java/com/rotalog/frotas/
 | POST   | /api/veiculos              | Cadastrar veículo            |
 | GET    | /api/motoristas            | Listar motoristas            |
 | GET    | /api/manutencoes           | Listar manutenções           |
+| POST   | /api/alertas-manutencao/verificar | Verificar veículos elegíveis e emitir alertas de manutenção preventiva (envia para api-notificacoes) |
+| GET    | /api/alertas-manutencao    | Listar alertas de manutenção (filtro opcional `?status=`) |
 
 ## Migrations
 

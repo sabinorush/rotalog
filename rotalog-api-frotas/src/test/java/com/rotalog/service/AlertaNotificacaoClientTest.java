@@ -14,6 +14,7 @@ import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
@@ -48,9 +49,11 @@ class AlertaNotificacaoClientTest {
         mockServer.expect(requestTo(URL))
                 .andExpect(method(POST))
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.servicoOrigem").value("api-frotas"))
+                .andExpect(jsonPath("$.referenciaId").value("veiculo-1"))
                 .andRespond(withSuccess("{\"status\":\"ENVIADO\",\"erroMensagem\":null}", MediaType.APPLICATION_JSON));
 
-        ResultadoNotificacaoAlerta resultado = alertaNotificacaoClient.enviarAlerta("gestor@rotalog.com", "mensagem qualquer");
+        ResultadoNotificacaoAlerta resultado = alertaNotificacaoClient.enviarAlerta("gestor@rotalog.com", "mensagem qualquer", "veiculo-1");
 
         assertThat(resultado.getStatus()).isEqualTo(StatusAlerta.ENVIADA);
         assertThat(resultado.getMensagemErro()).isNull();
@@ -64,7 +67,7 @@ class AlertaNotificacaoClientTest {
                 .andExpect(method(POST))
                 .andRespond(withSuccess("{\"status\":\"FALHA\",\"erroMensagem\":\"destinatario invalido\"}", MediaType.APPLICATION_JSON));
 
-        ResultadoNotificacaoAlerta resultado = alertaNotificacaoClient.enviarAlerta("gestor@rotalog.com", "mensagem qualquer");
+        ResultadoNotificacaoAlerta resultado = alertaNotificacaoClient.enviarAlerta("gestor@rotalog.com", "mensagem qualquer", "veiculo-2");
 
         assertThat(resultado.getStatus()).isEqualTo(StatusAlerta.FALHA);
         assertThat(resultado.getMensagemErro()).isEqualTo("destinatario invalido");
@@ -80,7 +83,7 @@ class AlertaNotificacaoClientTest {
                     throw new IOException("Connection refused");
                 });
 
-        ResultadoNotificacaoAlerta resultado = alertaNotificacaoClient.enviarAlerta("gestor@rotalog.com", "mensagem qualquer");
+        ResultadoNotificacaoAlerta resultado = alertaNotificacaoClient.enviarAlerta("gestor@rotalog.com", "mensagem qualquer", "veiculo-3");
 
         assertThat(resultado.getStatus()).isEqualTo(StatusAlerta.PENDENTE);
         assertThat(resultado.getMensagemErro()).isNotNull();
@@ -94,7 +97,7 @@ class AlertaNotificacaoClientTest {
                 .andExpect(method(POST))
                 .andRespond(withServerError());
 
-        ResultadoNotificacaoAlerta resultado = alertaNotificacaoClient.enviarAlerta("gestor@rotalog.com", "mensagem qualquer");
+        ResultadoNotificacaoAlerta resultado = alertaNotificacaoClient.enviarAlerta("gestor@rotalog.com", "mensagem qualquer", "veiculo-4");
 
         assertThat(resultado.getStatus()).isEqualTo(StatusAlerta.PENDENTE);
         assertThat(resultado.getMensagemErro()).isNotNull();

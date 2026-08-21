@@ -29,6 +29,8 @@ public class AlertaNotificacaoClient {
 
     private static final String STATUS_ENVIADO = "ENVIADO";
 
+    private static final String SERVICO_ORIGEM = "api-frotas";
+
     private final RestTemplate restTemplate;
 
     public AlertaNotificacaoClient(RestTemplate notificacaoRestTemplate) {
@@ -39,7 +41,7 @@ public class AlertaNotificacaoClient {
      * Envia um alerta de manutenção preventiva para api-notificacoes e traduz
      * o resultado (sucesso/falha/indisponibilidade) em {@link ResultadoNotificacaoAlerta}.
      */
-    public ResultadoNotificacaoAlerta enviarAlerta(String destinatario, String mensagem) {
+    public ResultadoNotificacaoAlerta enviarAlerta(String destinatario, String mensagem, String referenciaId) {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -49,6 +51,8 @@ public class AlertaNotificacaoClient {
             body.put("destinatario", destinatario);
             body.put("mensagem", mensagem);
             body.put("canal", "email");
+            body.put("servicoOrigem", SERVICO_ORIGEM);
+            body.put("referenciaId", referenciaId);
 
             HttpEntity<Map<String, String>> request = new HttpEntity<>(body, headers);
 

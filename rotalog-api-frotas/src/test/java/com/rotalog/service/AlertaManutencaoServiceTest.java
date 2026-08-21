@@ -82,7 +82,7 @@ class AlertaManutencaoServiceTest {
             List<AlertaManutencao> resultado = alertaManutencaoService.verificarEEmitirAlertas();
 
             assertThat(resultado).isEmpty();
-            verify(alertaNotificacaoClient, never()).enviarAlerta(anyString(), anyString());
+            verify(alertaNotificacaoClient, never()).enviarAlerta(anyString(), anyString(), anyString());
             verify(alertaManutencaoRepository, never()).save(any(AlertaManutencao.class));
         }
 
@@ -93,7 +93,7 @@ class AlertaManutencaoServiceTest {
             when(manutencaoService.obterVeiculosElegiveisParaAlerta()).thenReturn(Collections.singletonList(veiculo));
             when(veiculoRepository.findById(1L)).thenReturn(Optional.of(veiculo));
             when(manutencaoService.motivoAlerta(1L)).thenReturn("KM_EXCEDIDO");
-            when(alertaNotificacaoClient.enviarAlerta(eq("gestor@rotalog.com"), anyString()))
+            when(alertaNotificacaoClient.enviarAlerta(eq("gestor@rotalog.com"), anyString(), eq("veiculo-1")))
                     .thenReturn(ResultadoNotificacaoAlerta.enviado());
             mockSalvarAlertaEcoando();
 
@@ -107,6 +107,7 @@ class AlertaManutencaoServiceTest {
             assertThat(alerta.getMensagemErro()).isNull();
             assertThat(alerta.getDataCriacao()).isNotNull();
             assertThat(alerta.getDataAtualizacao()).isNotNull();
+            verify(alertaNotificacaoClient).enviarAlerta(eq("gestor@rotalog.com"), anyString(), eq("veiculo-1"));
         }
 
         @Test
@@ -116,7 +117,7 @@ class AlertaManutencaoServiceTest {
             when(manutencaoService.obterVeiculosElegiveisParaAlerta()).thenReturn(Collections.singletonList(veiculo));
             when(veiculoRepository.findById(2L)).thenReturn(Optional.of(veiculo));
             when(manutencaoService.motivoAlerta(2L)).thenReturn("TEMPO_EXCEDIDO");
-            when(alertaNotificacaoClient.enviarAlerta(eq("gestor@rotalog.com"), anyString()))
+            when(alertaNotificacaoClient.enviarAlerta(eq("gestor@rotalog.com"), anyString(), eq("veiculo-2")))
                     .thenReturn(ResultadoNotificacaoAlerta.falha("destinatario invalido"));
             mockSalvarAlertaEcoando();
 
@@ -135,7 +136,7 @@ class AlertaManutencaoServiceTest {
             when(manutencaoService.obterVeiculosElegiveisParaAlerta()).thenReturn(Collections.singletonList(veiculo));
             when(veiculoRepository.findById(3L)).thenReturn(Optional.of(veiculo));
             when(manutencaoService.motivoAlerta(3L)).thenReturn("KM_E_TEMPO_EXCEDIDOS");
-            when(alertaNotificacaoClient.enviarAlerta(eq("gestor@rotalog.com"), anyString()))
+            when(alertaNotificacaoClient.enviarAlerta(eq("gestor@rotalog.com"), anyString(), eq("veiculo-3")))
                     .thenReturn(ResultadoNotificacaoAlerta.pendente("Connection refused"));
             mockSalvarAlertaEcoando();
 
@@ -154,7 +155,7 @@ class AlertaManutencaoServiceTest {
             when(manutencaoService.obterVeiculosElegiveisParaAlerta()).thenReturn(Collections.singletonList(veiculo));
             when(veiculoRepository.findById(4L)).thenReturn(Optional.empty());
             when(manutencaoService.motivoAlerta(4L)).thenReturn("KM_EXCEDIDO");
-            when(alertaNotificacaoClient.enviarAlerta(eq("gestor@rotalog.com"), anyString()))
+            when(alertaNotificacaoClient.enviarAlerta(eq("gestor@rotalog.com"), anyString(), eq("veiculo-4")))
                     .thenReturn(ResultadoNotificacaoAlerta.enviado());
             mockSalvarAlertaEcoando();
 
@@ -162,7 +163,7 @@ class AlertaManutencaoServiceTest {
 
             assertThat(resultado).hasSize(1);
             ArgumentCaptor<String> mensagemCaptor = ArgumentCaptor.forClass(String.class);
-            verify(alertaNotificacaoClient).enviarAlerta(eq("gestor@rotalog.com"), mensagemCaptor.capture());
+            verify(alertaNotificacaoClient).enviarAlerta(eq("gestor@rotalog.com"), mensagemCaptor.capture(), eq("veiculo-4"));
             assertThat(mensagemCaptor.getValue()).contains("JKL3456");
         }
 
@@ -176,7 +177,7 @@ class AlertaManutencaoServiceTest {
             when(veiculoRepository.findById(2L)).thenReturn(Optional.of(veiculo2));
             when(manutencaoService.motivoAlerta(1L)).thenReturn("KM_EXCEDIDO");
             when(manutencaoService.motivoAlerta(2L)).thenReturn("TEMPO_EXCEDIDO");
-            when(alertaNotificacaoClient.enviarAlerta(eq("gestor@rotalog.com"), anyString()))
+            when(alertaNotificacaoClient.enviarAlerta(eq("gestor@rotalog.com"), anyString(), anyString()))
                     .thenReturn(ResultadoNotificacaoAlerta.enviado())
                     .thenReturn(ResultadoNotificacaoAlerta.falha("erro qualquer"));
             mockSalvarAlertaEcoando();
@@ -189,6 +190,8 @@ class AlertaManutencaoServiceTest {
             assertThat(resultado.get(1).getVeiculoId()).isEqualTo(2L);
             assertThat(resultado.get(1).getStatus()).isEqualTo(StatusAlerta.FALHA);
             verify(alertaManutencaoRepository, times(2)).save(any(AlertaManutencao.class));
+            verify(alertaNotificacaoClient).enviarAlerta(eq("gestor@rotalog.com"), anyString(), eq("veiculo-1"));
+            verify(alertaNotificacaoClient).enviarAlerta(eq("gestor@rotalog.com"), anyString(), eq("veiculo-2"));
         }
     }
 }

@@ -60,7 +60,8 @@ public class AlertaManutencaoService {
             String motivo = manutencaoService.motivoAlerta(veiculoId);
 
             String mensagem = "Veículo " + veiculo.getPlaca() + " elegível para manutenção preventiva: " + motivo;
-            ResultadoNotificacaoAlerta resultado = alertaNotificacaoClient.enviarAlerta(DESTINATARIO_GESTOR, mensagem);
+            String referenciaId = "veiculo-" + veiculoId;
+            ResultadoNotificacaoAlerta resultado = alertaNotificacaoClient.enviarAlerta(DESTINATARIO_GESTOR, mensagem, referenciaId);
 
             AlertaManutencao alerta = new AlertaManutencao();
             alerta.setVeiculoId(veiculoId);
