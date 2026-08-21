@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * ManutencaoService - Serviço de gerenciamento de manutenções
@@ -274,5 +275,64 @@ public class ManutencaoService {
                 "Veículo " + veiculo.getPlaca() + " atingiu " + quilometragemAtual + " km. Agendar manutenção preventiva."
             );
         }
+    }
+
+    // FIXME: Hardcoded threshold, mesmo padrão de limiteQuilometragem em precisaDeManutencao
+    private static final int MESES_LIMITE_SEM_MANUTENCAO = 6;
+
+    /**
+     * Verifica se já se passaram mais de {@link #MESES_LIMITE_SEM_MANUTENCAO} meses desde a
+     * última manutenção do veículo. Na ausência de manutenção registrada, usa a data de
+     * cadastro do veículo como referência.
+     */
+    private boolean excedeuTempoSemManutencao(Long veiculoId, Veiculo veiculo) {
+        Manutencao ultima = manutencaoRepository.findUltimaManutencao(veiculoId);
+        LocalDateTime dataReferencia = (ultima != null && ultima.getDataManutencao() != null)
+                ? ultima.getDataManutencao()
+                : veiculo.getDataCadastro();
+
+        if (dataReferencia == null) {
+            return false;
+        }
+
+        return dataReferencia.isBefore(LocalDateTime.now().minusMonths(MESES_LIMITE_SEM_MANUTENCAO));
+    }
+
+    /**
+     * Retorna o motivo pelo qual o veículo é elegível para um alerta de manutenção
+     * preventiva, ou {@code null} se nenhum critério for atendido.
+     *
+     * Critérios (elegível se QUALQUER um for verdadeiro):
+     * - Km: {@link #precisaDeManutencao(Long)}
+     * - Tempo: mais de {@link #MESES_LIMITE_SEM_MANUTENCAO} meses sem manutenção
+     */
+    public String motivoAlerta(Long veiculoId) {
+        Veiculo veiculo = buscarVeiculoOuFalhar(veiculoId);
+
+        boolean excedeuKm = Boolean.TRUE.equals(precisaDeManutencao(veiculoId));
+        boolean excedeuTempo = excedeuTempoSemManutencao(veiculoId, veiculo);
+
+        if (excedeuKm && excedeuTempo) {
+            return "KM_E_TEMPO_EXCEDIDOS";
+        }
+        if (excedeuKm) {
+            return "KM_EXCEDIDO";
+        }
+        if (excedeuTempo) {
+            return "TEMPO_EXCEDIDO";
+        }
+        return null;
+    }
+
+    /**
+     * Lista os veículos ATIVOS elegíveis para um alerta de manutenção preventiva
+     * (ver {@link #motivoAlerta(Long)}).
+     *
+     * FIXME: N+1 - motivoAlerta refaz a busca do veículo por id para cada item da lista
+     */
+    public List<Veiculo> obterVeiculosElegiveisParaAlerta() {
+        return veiculoRepository.findByStatus(StatusVeiculo.ATIVO).stream()
+                .filter(veiculo -> motivoAlerta(veiculo.getId()) != null)
+                .collect(Collectors.toList());
     }
 }

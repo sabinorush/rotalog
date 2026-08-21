@@ -41,6 +41,12 @@ import { RouterModule } from '@angular/router';
           </a>
         </li>
         <li>
+          <a routerLink="/alertas-manutencao" routerLinkActive="active">
+            <span class="icon">🔔</span>
+            <span>Alertas de Manutenção</span>
+          </a>
+        </li>
+        <li>
           <a routerLink="/entregas" routerLinkActive="active">
             <span class="icon">📦</span>
             <span>Entregas</span>

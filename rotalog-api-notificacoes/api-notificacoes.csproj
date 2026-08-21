@@ -8,6 +8,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- api-notificacoes.Tests fica aninhado dentro desta pasta; sem esta exclusão o glob
+         padrão do SDK inclui os .cs do projeto de teste na compilação deste projeto. -->
+    <Compile Remove="api-notificacoes.Tests/**/*.cs" />
+    <Content Remove="api-notificacoes.Tests/**/*" />
+    <None Remove="api-notificacoes.Tests/**/*" />
+    <EmbeddedResource Remove="api-notificacoes.Tests/**/*" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.8" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.12" />
