@@ -40,3 +40,14 @@ O projeto segue uma estrutura inspirada em Clean Architecture:
 | POST   | /api/notificacoes/sms       | Enviar notificação por SMS     |
 | GET    | /api/notificacoes/historico | Histórico de envios            |
 | GET    | /health                     | Health check do serviço        |
+
+## Testes
+
+```bash
+dotnet test api-notificacoes.Tests
+```
+
+Primeiro projeto de testes do repositório (`api-notificacoes.Tests`, xUnit).
+Cobre via `WebApplicationFactory` + EF Core InMemory (sem depender de um
+Postgres real) o contrato HTTP consumido pelo `AlertaNotificacaoClient` de
+`rotalog-api-frotas` — `POST /api/notificacoes` com `tipo=ALERTA_MANUTENCAO`.

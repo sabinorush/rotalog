@@ -112,3 +112,7 @@ Console.WriteLine("  POST   /api/notificacoes/processar");
 Console.WriteLine();
 
 app.Run();
+
+// Exposto para permitir o uso de WebApplicationFactory<Program> em testes de integração
+// (Program.cs usa top-level statements; a classe partial é exigida pelo ASP.NET Core para isso)
+public partial class Program { }
